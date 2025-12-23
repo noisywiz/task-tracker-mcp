@@ -1,5 +1,6 @@
 services:
   task-tracker:
+    build: .
     image: ywatanabe/task-tracker:latest
     container_name: task-tracker-mcp
     ports:
