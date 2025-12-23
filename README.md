@@ -138,7 +138,7 @@ The server exposes 35+ tools for task management:
 
 ## Integration with Claude Code
 
-### 1. Using with `.mcp.json`
+### Option 1: Docker (Recommended - Zero Setup)
 
 In your Claude Code project, create `.mcp.json`:
 
@@ -146,7 +146,32 @@ In your Claude Code project, create `.mcp.json`:
 {
   "mcpServers": {
     "task-tracker": {
-      "type": "stdio",
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "ywatanabe/task-tracker:latest"]
+    }
+  }
+}
+```
+
+**Benefits:**
+- ✅ No installation needed
+- ✅ Works on Windows, macOS, Linux, WSL
+- ✅ Container starts when Claude Code needs it
+- ✅ Container stops automatically when done
+- ✅ Always uses latest version from Docker Hub
+
+**Requirements:** Docker Desktop installed
+
+---
+
+### Option 2: Local Python Installation
+
+If you prefer to run locally without Docker:
+
+```json
+{
+  "mcpServers": {
+    "task-tracker": {
       "command": "python",
       "args": ["-m", "task_tracker_mcp.server"]
     }
@@ -154,7 +179,13 @@ In your Claude Code project, create `.mcp.json`:
 }
 ```
 
-Or for HTTP-based access (with additional setup):
+**Requirements:** Python 3.11+ with `pip install -e .`
+
+---
+
+### Option 3: HTTP-Based Access (For Future Use)
+
+When HTTP transport is added:
 
 ```json
 {
