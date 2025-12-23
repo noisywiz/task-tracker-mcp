@@ -23,12 +23,17 @@ RUN useradd -m -u 1000 appuser && \
 USER appuser
 
 # Environment variables
+ENV MCP_TRANSPORT=http
+ENV MCP_HOST=0.0.0.0
 ENV TASK_TRACKER_MCP_PORT=8000
 ENV PYTHONUNBUFFERED=1
+
+# Expose port for HTTP transport
+EXPOSE 8000
 
 # Health check: verify database is accessible
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sqlite3; sqlite3.connect('tasks.db').execute('SELECT 1')" || exit 1
 
-# Default command runs the MCP server via stdio
+# Default command runs the MCP server (defaults to HTTP transport)
 CMD ["python", "-m", "task_tracker_mcp.server"]

@@ -82,9 +82,39 @@ docker-compose up -d
 
 ## Configuration
 
+### Transport Modes
+
+The server supports multiple transport modes for different use cases:
+
+| Transport | Use Case | Configuration |
+|-----------|----------|---------------|
+| **stdio** (default) | Local Claude Code integration | No config needed |
+| **http** | Docker daemon, remote access | `MCP_TRANSPORT=http` |
+| **streamable-http** | Production scaling | `MCP_TRANSPORT=streamable-http` |
+
+#### Transport Mode Examples
+
+**Stdio (Claude Code)**
+```bash
+python -m task_tracker_mcp.server
+```
+
+**HTTP (Docker daemon)**
+```bash
+MCP_TRANSPORT=http python -m task_tracker_mcp.server
+# Server runs on http://0.0.0.0:8000
+```
+
+**Custom port**
+```bash
+MCP_TRANSPORT=http TASK_TRACKER_MCP_PORT=9000 python -m task_tracker_mcp.server
+```
+
 ### Environment Variables
 
-- `TASK_TRACKER_MCP_PORT` (default: `8000`) - Port the server listens on
+- `MCP_TRANSPORT` (default: `stdio`) - Transport mode: `stdio`, `http`, `streamable-http`
+- `MCP_HOST` (default: `0.0.0.0`) - Host to bind to (only for HTTP transports)
+- `TASK_TRACKER_MCP_PORT` (default: `8000`) - Port for HTTP transports
 - `PYTHONUNBUFFERED` (default: `1`) - Show Python logs in real-time
 
 ### Database
@@ -162,6 +192,8 @@ In your Claude Code project, create `.mcp.json`:
 
 **Requirements:** Docker Desktop installed
 
+**Note:** This option uses stdio transport (ephemeral containers). For a persistent background daemon, see Option 4 below.
+
 ---
 
 ### Option 2: Local Python Installation
@@ -183,10 +215,40 @@ If you prefer to run locally without Docker:
 
 ---
 
-### Option 3: HTTP-Based Access (For Future Use)
+### Option 3: Docker with Custom Configuration
 
-When HTTP transport is added:
+For advanced Docker deployments:
 
+```bash
+# Run with custom port
+docker run -d -p 9000:9000 \
+  -e MCP_TRANSPORT=http \
+  -e TASK_TRACKER_MCP_PORT=9000 \
+  ywatanabe/task-tracker:latest
+```
+
+**Requirements:** Docker Desktop installed
+
+---
+
+### Option 4: HTTP-Based Docker Daemon (Persistent Background Service)
+
+For a persistent background service accessible from multiple Claude Code projects or directly via HTTP:
+
+**Start the daemon:**
+```bash
+# Using docker-compose
+docker-compose up -d
+
+# Or manually
+docker run -d -p 8000:8000 \
+  -e MCP_TRANSPORT=http \
+  -e MCP_HOST=0.0.0.0 \
+  -e TASK_TRACKER_MCP_PORT=8000 \
+  ywatanabe/task-tracker:latest
+```
+
+**Configure Claude Code (`.mcp.json`):**
 ```json
 {
   "mcpServers": {
@@ -197,6 +259,23 @@ When HTTP transport is added:
   }
 }
 ```
+
+**Verify it's running:**
+```bash
+docker-compose ps  # Should show "Up" status, not "Restarting"
+curl http://localhost:8000  # Verify HTTP endpoint is responding
+```
+
+**Benefits:**
+- ✅ Runs as persistent daemon (no container restart loops)
+- ✅ Accessible from multiple Claude Code projects simultaneously
+- ✅ Standard HTTP endpoint for programmatic access
+- ✅ Better for development environments
+- ✅ Easy debugging with `docker-compose logs`
+
+**Requirements:** Docker Desktop installed
+
+**Note:** This is the recommended approach for development when you want a persistent background service.
 
 ### 2. Using with Skills
 

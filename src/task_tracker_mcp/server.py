@@ -454,13 +454,34 @@ async def shutdown() -> None:
 
 
 async def main() -> None:
-    """Run the MCP server."""
+    """Run the MCP server with configurable transport."""
+    import os
+
+    # Read configuration from environment
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    host = os.getenv("MCP_HOST", "0.0.0.0")
+    port = int(os.getenv("TASK_TRACKER_MCP_PORT", "8000"))
+
     try:
         await startup()
 
-        # Run the server
-        logger.info("Task tracker MCP server running")
-        await mcp.run_stdio_async()
+        # Run the server based on transport mode
+        logger.info(f"Task tracker MCP server running on {transport} transport")
+
+        if transport == "stdio":
+            # Default stdio transport for Claude Code
+            await mcp.run_stdio_async()
+        elif transport == "http":
+            # HTTP transport for daemon mode
+            logger.info(f"Listening on http://{host}:{port}")
+            await mcp.run_async(transport="http", host=host, port=port)
+        elif transport == "streamable-http":
+            # StreamableHTTP for production scaling
+            logger.info(f"Listening on http://{host}:{port}")
+            await mcp.run_async(transport="streamable-http", host=host, port=port)
+        else:
+            raise ValueError(f"Unknown transport: {transport}")
+
     except KeyboardInterrupt:
         logger.info("Received interrupt signal")
     except Exception as e:

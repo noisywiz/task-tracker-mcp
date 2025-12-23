@@ -5,6 +5,8 @@ services:
     ports:
       - "8000:8000"
     environment:
+      MCP_TRANSPORT: "http"
+      MCP_HOST: "0.0.0.0"
       TASK_TRACKER_MCP_PORT: "8000"
       PYTHONUNBUFFERED: "1"
     volumes:
