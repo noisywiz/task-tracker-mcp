@@ -3,12 +3,12 @@ services:
     image: ywatanabe/task-tracker:latest
     container_name: task-tracker-mcp
     ports:
-      - "8000:8000"
+      - "${DOCKER_PORT:-8000}:${TASK_TRACKER_MCP_PORT:-8000}"
     environment:
-      MCP_TRANSPORT: "http"
-      MCP_HOST: "0.0.0.0"
-      TASK_TRACKER_MCP_PORT: "8000"
-      PYTHONUNBUFFERED: "1"
+      MCP_TRANSPORT: "${MCP_TRANSPORT:-http}"
+      MCP_HOST: "${MCP_HOST:-0.0.0.0}"
+      TASK_TRACKER_MCP_PORT: "${TASK_TRACKER_MCP_PORT:-8000}"
+      PYTHONUNBUFFERED: "${PYTHONUNBUFFERED:-1}"
     volumes:
       - ./data:/data
     restart: unless-stopped

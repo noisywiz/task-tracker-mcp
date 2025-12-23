@@ -82,6 +82,15 @@ docker-compose up -d
 
 ## Configuration
 
+### Quick Configuration
+
+Before running with docker-compose, create a `.env` file from the example:
+
+```bash
+cp .env.example .env
+# Edit .env to customize port, host, transport mode, etc.
+```
+
 ### Transport Modes
 
 The server supports multiple transport modes for different use cases:
@@ -112,10 +121,37 @@ MCP_TRANSPORT=http TASK_TRACKER_MCP_PORT=9000 python -m task_tracker_mcp.server
 
 ### Environment Variables
 
-- `MCP_TRANSPORT` (default: `stdio`) - Transport mode: `stdio`, `http`, `streamable-http`
+All configuration is done via environment variables in `.env`:
+
+- `MCP_TRANSPORT` (default: `http`) - Transport mode: `stdio`, `http`, `streamable-http`
 - `MCP_HOST` (default: `0.0.0.0`) - Host to bind to (only for HTTP transports)
-- `TASK_TRACKER_MCP_PORT` (default: `8000`) - Port for HTTP transports
+- `TASK_TRACKER_MCP_PORT` (default: `8000`) - Port the server listens on (for HTTP transports)
+- `DOCKER_PORT` (default: `8000`) - Port on your host machine (maps to container's MCP_PORT)
 - `PYTHONUNBUFFERED` (default: `1`) - Show Python logs in real-time
+
+**Example `.env` configurations:**
+
+```bash
+# Default (port 8000)
+DOCKER_PORT=8000
+TASK_TRACKER_MCP_PORT=8000
+MCP_TRANSPORT=http
+
+# Custom port (use 9000 instead)
+DOCKER_PORT=9000
+TASK_TRACKER_MCP_PORT=9000
+MCP_TRANSPORT=http
+
+# Multiple instances (one on 8000, another on 8001)
+# .env.instance1
+DOCKER_PORT=8000
+TASK_TRACKER_MCP_PORT=8000
+
+# .env.instance2
+DOCKER_PORT=8001
+TASK_TRACKER_MCP_PORT=8001
+# Then: docker-compose --env-file .env.instance2 up -d
+```
 
 ### Database
 
@@ -236,11 +272,16 @@ docker run -d -p 9000:9000 \
 For a persistent background service accessible from multiple Claude Code projects or directly via HTTP:
 
 **Start the daemon:**
+
 ```bash
-# Using docker-compose
+# First, configure your .env file (copy from .env.example)
+cp .env.example .env
+# Edit .env to customize ports and settings if needed
+
+# Then start with docker-compose (loads .env automatically)
 docker-compose up -d
 
-# Or manually
+# Or manually with environment variables
 docker run -d -p 8000:8000 \
   -e MCP_TRANSPORT=http \
   -e MCP_HOST=0.0.0.0 \
