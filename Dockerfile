@@ -36,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sqlite3; sqlite3.connect('tasks.db').execute('SELECT 1')" || exit 1
 
 # Default command runs the MCP server (defaults to HTTP transport)
-CMD ["python", "-m", "task_tracker_mcp.server"]
+CMD ["python", "-m", "src"]
