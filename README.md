@@ -4,14 +4,14 @@ A comprehensive task tracking and management system accessible via the **Model C
 
 ## Features
 
-✅ **Task Management**: Create, update, delete, and track tasks with priorities and due dates
-✅ **Projects**: Organize tasks into projects
-✅ **Tags**: Categorize and filter tasks with custom tags
-✅ **Full-Text Search**: Search across task titles and descriptions
-✅ **Analytics**: View completion rates, overdue tasks, and productivity metrics
-✅ **SQLite Backend**: Local data storage with FTS5 full-text search
-✅ **Configurable Port**: Run on any available port
-✅ **Docker Support**: Easy containerization and deployment
+- **Task Management**: Create, update, delete, and track tasks with priorities and due dates
+- **Projects**: Organize tasks into projects
+- **Tags**: Categorize and filter tasks with custom tags
+- **Full-Text Search**: Search across task titles and descriptions
+- **Analytics**: View completion rates, overdue tasks, and productivity metrics
+- **SQLite Backend**: Local data storage with FTS5 full-text search
+- **Configurable Port**: Run on any available port
+- **Docker Support**: Easy containerization and deployment
 
 ### Database
 
