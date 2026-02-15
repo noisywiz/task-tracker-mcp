@@ -7,9 +7,9 @@ import logging
 import sys
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
-from .database import DatabaseManager
+from src.database import DatabaseManager
 
 # Configure logging
 logging.basicConfig(
@@ -35,8 +35,8 @@ async def create_task(
     description: str = "",
     priority: str = "medium",
     status: str = "pending",
-    project_id: int = None,
-    due_date: str = None,
+    project_id: int | None = None,
+    due_date: str | None = None,
 ) -> str:
     """Create a new task.
 
@@ -85,13 +85,33 @@ async def list_tasks(limit: int = 50, offset: int = 0) -> str:
 
 
 @mcp.tool()
-async def update_task(task_id: int, **kwargs) -> str:
+async def update_task(
+    task_id: int,
+    title: str | None = None,
+    description: str | None = None,
+    status: str | None = None,
+    priority: str | None = None,
+    due_date: str | None = None,
+) -> str:
     """Update a task by ID.
 
-    Supported fields: title, description, status, priority, due_date
+    Args:
+        task_id: Task ID to update
+        title: Task title
+        description: Task description
+        status: Task status (pending, in_progress, completed, blocked)
+        priority: Priority level (low, medium, high)
+        due_date: Due date in YYYY-MM-DD format
     """
     try:
-        task = await db_manager.update_task(task_id, **kwargs)
+        task = await db_manager.update_task(
+            task_id,
+            title=title,
+            description=description,
+            status=status,
+            priority=priority,
+            due_date=due_date,
+        )
         if not task:
             return f"Task {task_id} not found"
         return json.dumps(task, indent=2)
@@ -124,13 +144,27 @@ async def search_tasks(query: str) -> str:
 
 
 @mcp.tool()
-async def filter_tasks(**filters) -> str:
+async def filter_tasks(
+    status: str | None = None,
+    priority: str | None = None,
+    project_id: int | None = None,
+    tag_name: str | None = None,
+) -> str:
     """Filter tasks by various criteria.
 
-    Supported filters: status, priority, project_id, tag_name
+    Args:
+        status: Filter by task status
+        priority: Filter by priority level
+        project_id: Filter by project ID
+        tag_name: Filter by tag name
     """
     try:
-        tasks = await db_manager.filter_tasks(**filters)
+        tasks = await db_manager.filter_tasks(
+            status=status,
+            priority=priority,
+            project_id=project_id,
+            tag_name=tag_name,
+        )
         return json.dumps({"count": len(tasks), "tasks": tasks}, indent=2)
     except Exception as e:
         return f"Error filtering tasks: {str(e)}"
@@ -172,10 +206,24 @@ async def list_projects() -> str:
 
 
 @mcp.tool()
-async def update_project(project_id: int, **kwargs) -> str:
-    """Update a project."""
+async def update_project(
+    project_id: int,
+    name: str | None = None,
+    description: str | None = None,
+) -> str:
+    """Update a project.
+
+    Args:
+        project_id: Project ID to update
+        name: Project name
+        description: Project description
+    """
     try:
-        project = await db_manager.update_project(project_id, **kwargs)
+        project = await db_manager.update_project(
+            project_id,
+            name=name,
+            description=description,
+        )
         if not project:
             return f"Project {project_id} not found"
         return json.dumps(project, indent=2)
@@ -334,15 +382,17 @@ async def daily_review() -> str:
         prompt = f"""# Daily Task Review
 
 ## Summary
-- Total tasks: {stats.get('total', 0)}
-- Completed: {stats.get('completed', 0)}
-- Pending: {stats.get('pending', 0)}
+- Total tasks: {stats.get("total", 0)}
+- Completed: {stats.get("completed", 0)}
+- Pending: {stats.get("pending", 0)}
 - Overdue: {len(overdue)}
 
 ## Overdue Tasks ({len(overdue)})
 """
         for task in overdue:
-            prompt += f"- [{task.get('priority')}] {task.get('title')} (due: {task.get('due_date')})\n"
+            prompt += (
+                f"- [{task.get('priority')}] {task.get('title')} (due: {task.get('due_date')})\n"
+            )
 
         prompt += "\n## Today's Pending Tasks\n"
         for task in tasks[:10]:
@@ -366,10 +416,10 @@ async def weekly_planning() -> str:
 Projects: {len(projects)}
 
 ## Task Metrics
-- Total: {stats.get('total', 0)}
-- Completed this week: {stats.get('completed', 0)}
-- Completion rate: {stats.get('completion_rate', 0):.1f}%
-- High priority: {stats.get('high_priority', 0)}
+- Total: {stats.get("total", 0)}
+- Completed this week: {stats.get("completed", 0)}
+- Completion rate: {stats.get("completion_rate", 0):.1f}%
+- High priority: {stats.get("high_priority", 0)}
 
 ## Projects
 """
@@ -393,9 +443,9 @@ async def project_summary_prompt(project_id: int) -> str:
         tasks = await db_manager.get_project_tasks(project_id)
         completed = [t for t in tasks if t.get("status") == "completed"]
 
-        prompt = f"""# {project.get('name')} Summary
+        prompt = f"""# {project.get("name")} Summary
 
-Description: {project.get('description', 'N/A')}
+Description: {project.get("description", "N/A")}
 
 ## Task Overview
 - Total: {len(tasks)}
@@ -458,7 +508,7 @@ async def main() -> None:
     import os
 
     # Read configuration from environment
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    transport = os.getenv("MCP_TRANSPORT", "http")
     host = os.getenv("MCP_HOST", "0.0.0.0")
     port = int(os.getenv("TASK_TRACKER_MCP_PORT", "8000"))
 

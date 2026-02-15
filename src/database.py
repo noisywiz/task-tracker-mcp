@@ -73,9 +73,7 @@ class DatabaseManager:
                 project_id = cursor.lastrowid
 
                 # Fetch and return the created project
-                cursor = await conn.execute(
-                    "SELECT * FROM projects WHERE id = ?", (project_id,)
-                )
+                cursor = await conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
                 row = await cursor.fetchone()
                 return self._row_to_dict(row)
         except Exception as e:
@@ -86,9 +84,7 @@ class DatabaseManager:
         """Get project by ID."""
         try:
             async with self._get_connection() as conn:
-                cursor = await conn.execute(
-                    "SELECT * FROM projects WHERE id = ?", (project_id,)
-                )
+                cursor = await conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
                 row = await cursor.fetchone()
                 return self._row_to_dict(row) if row else None
         except Exception as e:
@@ -99,20 +95,24 @@ class DatabaseManager:
         """List all projects."""
         try:
             async with self._get_connection() as conn:
-                cursor = await conn.execute(
-                    "SELECT * FROM projects ORDER BY name"
-                )
+                cursor = await conn.execute("SELECT * FROM projects ORDER BY name")
                 rows = await cursor.fetchall()
                 return [self._row_to_dict(row) for row in rows]
         except Exception as e:
             logger.error(f"Failed to list projects: {e}")
             return []
 
-    async def update_project(self, project_id: int, **kwargs) -> Optional[dict]:
+    async def update_project(
+        self, project_id: int, name: str | None = None, description: str | None = None
+    ) -> Optional[dict]:
         """Update project fields."""
         try:
-            allowed_fields = {"name", "description"}
-            update_fields = {k: v for k, v in kwargs.items() if k in allowed_fields}
+            # Build update fields map from non-None parameters
+            update_fields = {}
+            if name is not None:
+                update_fields["name"] = name
+            if description is not None:
+                update_fields["description"] = description
 
             if not update_fields:
                 return await self.get_project(project_id)
@@ -176,9 +176,7 @@ class DatabaseManager:
         try:
             async with self._get_connection() as conn:
                 # Get task
-                cursor = await conn.execute(
-                    "SELECT * FROM tasks WHERE id = ?", (task_id,)
-                )
+                cursor = await conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
                 row = await cursor.fetchone()
                 if not row:
                     return None
@@ -229,11 +227,29 @@ class DatabaseManager:
             logger.error(f"Failed to list tasks: {e}")
             return []
 
-    async def update_task(self, task_id: int, **kwargs) -> Optional[dict]:
+    async def update_task(
+        self,
+        task_id: int,
+        title: str | None = None,
+        description: str | None = None,
+        status: str | None = None,
+        priority: str | None = None,
+        due_date: str | None = None,
+    ) -> Optional[dict]:
         """Update task fields."""
         try:
-            allowed_fields = {"title", "description", "status", "priority", "due_date"}
-            update_fields = {k: v for k, v in kwargs.items() if k in allowed_fields}
+            # Build update fields map from non-None parameters
+            update_fields = {}
+            if title is not None:
+                update_fields["title"] = title
+            if description is not None:
+                update_fields["description"] = description
+            if status is not None:
+                update_fields["status"] = status
+            if priority is not None:
+                update_fields["priority"] = priority
+            if due_date is not None:
+                update_fields["due_date"] = due_date
 
             if not update_fields:
                 return await self.get_task(task_id)
@@ -271,15 +287,11 @@ class DatabaseManager:
         try:
             async with self._get_connection() as conn:
                 # Get or create tag
-                cursor = await conn.execute(
-                    "SELECT id FROM tags WHERE name = ?", (tag_name,)
-                )
+                cursor = await conn.execute("SELECT id FROM tags WHERE name = ?", (tag_name,))
                 tag = await cursor.fetchone()
 
                 if not tag:
-                    cursor = await conn.execute(
-                        "INSERT INTO tags (name) VALUES (?)", (tag_name,)
-                    )
+                    cursor = await conn.execute("INSERT INTO tags (name) VALUES (?)", (tag_name,))
                     await conn.commit()
                     tag_id = cursor.lastrowid
                 else:
@@ -300,9 +312,7 @@ class DatabaseManager:
         """Remove a tag from a task."""
         try:
             async with self._get_connection() as conn:
-                cursor = await conn.execute(
-                    "SELECT id FROM tags WHERE name = ?", (tag_name,)
-                )
+                cursor = await conn.execute("SELECT id FROM tags WHERE name = ?", (tag_name,))
                 tag = await cursor.fetchone()
 
                 if not tag:
@@ -360,34 +370,44 @@ class DatabaseManager:
             logger.error(f"Failed to search tasks: {e}")
             return []
 
-    async def filter_tasks(self, **filters) -> list[dict]:
+    async def filter_tasks(
+        self,
+        status: str | None = None,
+        priority: str | None = None,
+        project_id: int | None = None,
+        tag_name: str | None = None,
+    ) -> list[dict]:
         """Filter tasks by various criteria."""
         try:
             async with self._get_connection() as conn:
                 query = "SELECT * FROM tasks WHERE 1=1"
                 params = []
 
-                if "status" in filters:
+                if status is not None:
                     query += " AND status = ?"
-                    params.append(filters["status"])
+                    params.append(status)
 
-                if "priority" in filters:
+                if priority is not None:
                     query += " AND priority = ?"
-                    params.append(filters["priority"])
+                    params.append(priority)
 
-                if "project_id" in filters:
+                if project_id is not None:
                     query += " AND project_id = ?"
-                    params.append(filters["project_id"])
+                    params.append(project_id)
 
-                if "tag_name" in filters:
+                if tag_name is not None:
                     query = f"""SELECT DISTINCT t.* FROM tasks t
                     JOIN task_tags tt ON t.id = tt.task_id
                     JOIN tags tg ON tt.tag_id = tg.id
-                    WHERE tg.name = ? AND {' AND '.join([k + ' = ?' for k in [k for k in filters.keys() if k != 'tag_name']])}"""
-                    params = [filters["tag_name"]] + [
+                    WHERE tg.name = ? AND {" AND ".join([k + " = ?" for k in [k for k in [status, priority, project_id] if k is not None]])}"""
+                    params = [tag_name] + [
                         v
-                        for k, v in filters.items()
-                        if k != "tag_name" and k in ["status", "priority", "project_id"]
+                        for k, v in [
+                            ("status", status),
+                            ("priority", priority),
+                            ("project_id", project_id),
+                        ]
+                        if k is not None and v is not None
                     ]
 
                 query += " ORDER BY priority = 'high' DESC, due_date ASC"
@@ -398,9 +418,7 @@ class DatabaseManager:
                 for row in rows:
                     task = self._row_to_dict(row)
                     tags_cursor = await conn.execute(
-                        """SELECT t.id, t.name FROM tags t
-                        JOIN task_tags tt ON t.id = tt.tag_id
-                        WHERE tt.task_id = ?""",
+                        "SELECT t.* FROM tags t JOIN task_tags tt ON t.id = tt.tag_id WHERE tt.task_id = ?",
                         (task["id"],),
                     )
                     tags = [dict(tag) for tag in await tags_cursor.fetchall()]
