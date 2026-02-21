@@ -11,6 +11,7 @@ services:
       PYTHONUNBUFFERED: "${PYTHONUNBUFFERED:-1}"
     volumes:
       - ./data:/data
+    user: "1000:1000"
     restart: unless-stopped
     # Uncomment to enable detailed logging
     # logging:
