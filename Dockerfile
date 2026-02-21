@@ -14,12 +14,6 @@ COPY src/ src/
 # Install package
 RUN pip install --no-cache-dir -e .
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-
-USER appuser
-
 # Environment variables
 ENV MCP_TRANSPORT=http
 ENV MCP_HOST=0.0.0.0
