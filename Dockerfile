@@ -16,9 +16,7 @@ RUN pip install --no-cache-dir -e .
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
-    mkdir -p /data && \
-    chown -R appuser:appuser /data /app && \
-    chmod 755 /data
+    chown -R appuser:appuser /app
 
 USER appuser
 
