@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(name="task-tracker")
 
 # Initialize database manager
-db_manager = DatabaseManager("tasks.db")
+db_manager = DatabaseManager("/data/tasks.db")
 
 
 # ==================== TOOLS ====================
